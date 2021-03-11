@@ -1,0 +1,339 @@
+classdef zia < matlab.apps.AppBase
+
+    % Properties that correspond to app components
+    properties (Access = public)
+        UIFigure              matlab.ui.Figure
+        PlateletCounterLabel  matlab.ui.control.Label
+        TabGroup              matlab.ui.container.TabGroup
+        Step1Tab              matlab.ui.container.Tab
+        Step1Panel            matlab.ui.container.Panel
+        LoadImageButton       matlab.ui.control.Button
+        PreprocessingButton   matlab.ui.control.Button
+        UIAxes                matlab.ui.control.UIAxes
+        UIAxes_2              matlab.ui.control.UIAxes
+        Step2Tab              matlab.ui.container.Tab
+        PlateletsPanel        matlab.ui.container.Panel
+        SegmentPButton        matlab.ui.control.Button
+        CountPButton          matlab.ui.control.Button
+        Label                 matlab.ui.control.Label
+        PCount                matlab.ui.control.NumericEditField
+        RBCPanel              matlab.ui.container.Panel
+        SegmentRBCButton      matlab.ui.control.Button
+        CountRBCButton        matlab.ui.control.Button
+        EditField_2Label      matlab.ui.control.Label
+        RBCcount              matlab.ui.control.NumericEditField
+        mask                  matlab.ui.control.UIAxes
+        segmented             matlab.ui.control.UIAxes
+        AboutTab              matlab.ui.container.Tab
+    end
+
+    
+    properties (Access = private)
+        Input;
+        erodedI;
+        outline;
+        green;
+        Segmented_RBC;
+        a;
+        b;
+        c;
+        d;
+        WBC_Count;
+    end
+
+    
+
+    
+    
+
+    methods (Access = private)
+
+        % Button pushed function: LoadImageButton
+        function LoadImageButtonPushed(app, event)
+            [FileName, PathName] = uigetfile('*.png','select an image');
+            app.Input = imread(strcat(PathName,FileName));
+            imshow(app.Input,'parent',app.UIAxes);
+            app.a=1;
+            app.UIAxes_2.cla;
+            app.mask.cla;
+            app.segmented.cla;
+            app.PCount.Value = 0;
+            app.RBCcount.Value = 0;
+        end
+
+        % Button pushed function: PreprocessingButton
+        function PreprocessingButtonPushed(app, event)
+            if app.a == 1
+                I = app.Input;
+                I(:,:,1)=0;
+                I(:,:,3)=0.15;
+                I = I - 75;
+                I1 = rgb2gray(I);
+                I2 = I1 %adapthisteq(I1);
+                
+                BW = imbinarize(I2 , graythresh(I2));
+                BW1 = bwareaopen(BW,72);
+                BW2 = ~BW1;
+ 
+                BW3 = imfill(BW2, 'holes');
+                
+                BW4 = bwareaopen(BW3,72);
+                BW5 = bitxor(BW3,BW4);
+                BW5 = imclearborder(BW5);
+                BW5 = bwareaopen(BW5,3);
+                
+                %se = strel('square',1);
+                %BW5 = imerode(BW5,se);
+                
+           
+                app.erodedI = BW5;
+                
+                imshow(app.erodedI,'parent',app.UIAxes_2);
+                title('Preprocessed Blood Sample','parent',app.UIAxes_2);
+                subplot(2,2,1);
+                imshow(I1);title('Gray image');
+                subplot(2,2,2);
+                imshow(BW5);title('BW5Contrast enhancjemnt');
+                subplot(2,2,3);
+                imshow(BW1);title('BW3Removed small object');
+                subplot(2,2,4);
+                imshow(BW);title('BW4Inverted binary image');
+                app.b=1;
+            else
+                msgbox('First Load Blood Sample','Error','error');
+            end
+            
+        end
+
+        % Button pushed function: SegmentPButton
+        function SegmentPButtonPushed(app, event)
+            if app.b==1
+%                 Segmented_WBC = bwareafilt(app.erodedI,[1500 50000]);
+%                 Segmented_WBC = imfill(Segmented_WBC,'holes');
+%                 imshow(Segmented_WBC,'parent',app.mask);
+%                 title('WBC Segmented Binary mask' , 'parent',app.mask);
+%                 
+%                 app.outline = bwperim(Segmented_WBC);
+%                 app.green = zeros(size(app.Input,1),size(app.Input,2),3);
+%                 app.green(:,:,2)=1;
+%                 imshow(app.Input,'parent',app.segmented);
+%                 hold(app.segmented,'on');
+%                 title('WBC Mask overley on Blood sample', 'parent',app.segmented);
+%                 se = strel('disk',7);
+%                 Segmented_WBC = imerode(Segmented_WBC,se);
+%                 hold(app.segmented,'on');
+%                 h=imshow(app.green,'parent',app.segmented);
+%                 set(h,'AlphaData',app.outline);
+                
+                cc = bwconncomp(app.erodedI);
+                app.WBC_Count = cc.NumObjects;
+                app.c=1;
+            else
+                msgbox('First load blood sample and process','Error','error');
+            end
+            
+        end
+
+        % Button pushed function: CountPButton
+        function CountPButtonPushed(app, event)
+
+            if app.c ==1
+                app.PCount.Value = app.WBC_Count;
+            else
+                msgbox('First segment WBC','Error' , 'error');
+            end
+        end
+
+        % Callback function
+        function SegmentRBCButtonPushed(app, event)
+            if app.b==1
+                app.Segmented_RBC = bwareafilt(app.erodedI,[400 6400]);
+                
+                
+                app.Segmented_RBC = imfill(app.Segmented_RBC,'holes');
+                imshow(app.Segmented_RBC , 'parent',app.mask);
+                
+                app.outline = bwperin(app.Segmented_RBC);
+                app.green = zeros(size(app.Input,1),size(app.Input,2),3);
+                app.green(:,:,2)=1;
+                imshow(app.Input,'parent',app.segmented);
+                hold(app.segmented,'on');
+                h=imshow(app.green,'parent',app.segmented);
+                set(h,'AlphaData',app.outline);
+                app.d=1;
+            else
+                msgbox('First Load blood sample & preprocess','ERROR','error');
+            end
+        end
+
+        % Size changed function: Step2Tab
+        function Step2TabSizeChanged(app, event)
+            position = app.Step2Tab.Position;
+        end
+    end
+
+    % App initialization and construction
+    methods (Access = private)
+
+        % Create UIFigure and components
+        function createComponents(app)
+
+            % Create UIFigure
+            app.UIFigure = uifigure;
+            app.UIFigure.Position = [100 100 639 488];
+            app.UIFigure.Name = 'UI Figure';
+
+            % Create PlateletCounterLabel
+            app.PlateletCounterLabel = uilabel(app.UIFigure);
+            app.PlateletCounterLabel.BackgroundColor = [0.851 0.3294 0.102];
+            app.PlateletCounterLabel.HorizontalAlignment = 'center';
+            app.PlateletCounterLabel.FontSize = 22;
+            app.PlateletCounterLabel.FontWeight = 'bold';
+            app.PlateletCounterLabel.Position = [0 487 640 45];
+            app.PlateletCounterLabel.Text = 'Platelet Counter';
+
+            % Create TabGroup
+            app.TabGroup = uitabgroup(app.UIFigure);
+            app.TabGroup.TabLocation = 'left';
+            app.TabGroup.Position = [1 23 640 466];
+
+            % Create Step1Tab
+            app.Step1Tab = uitab(app.TabGroup);
+            app.Step1Tab.Title = 'Step1';
+            app.Step1Tab.BackgroundColor = [0.651 0.651 0.651];
+
+            % Create Step1Panel
+            app.Step1Panel = uipanel(app.Step1Tab);
+            app.Step1Panel.Title = 'Step1';
+            app.Step1Panel.BackgroundColor = [0.502 0.502 0.502];
+            app.Step1Panel.FontWeight = 'bold';
+            app.Step1Panel.Position = [1 250 151 218];
+
+            % Create LoadImageButton
+            app.LoadImageButton = uibutton(app.Step1Panel, 'push');
+            app.LoadImageButton.ButtonPushedFcn = createCallbackFcn(app, @LoadImageButtonPushed, true);
+            app.LoadImageButton.FontWeight = 'bold';
+            app.LoadImageButton.Position = [17 162 100 22];
+            app.LoadImageButton.Text = 'Load Image';
+
+            % Create PreprocessingButton
+            app.PreprocessingButton = uibutton(app.Step1Panel, 'push');
+            app.PreprocessingButton.ButtonPushedFcn = createCallbackFcn(app, @PreprocessingButtonPushed, true);
+            app.PreprocessingButton.FontWeight = 'bold';
+            app.PreprocessingButton.Position = [17 53 100 22];
+            app.PreprocessingButton.Text = 'Preprocessing';
+
+            % Create UIAxes
+            app.UIAxes = uiaxes(app.Step1Tab);
+            app.UIAxes.PlotBoxAspectRatio = [1 0.491002570694087 0.491002570694087];
+            app.UIAxes.Position = [160 249 419 218];
+
+            % Create UIAxes_2
+            app.UIAxes_2 = uiaxes(app.Step1Tab);
+            app.UIAxes_2.PlotBoxAspectRatio = [1 0.491002570694087 0.491002570694087];
+            app.UIAxes_2.Position = [160 23 419 218];
+
+            % Create Step2Tab
+            app.Step2Tab = uitab(app.TabGroup);
+            app.Step2Tab.SizeChangedFcn = createCallbackFcn(app, @Step2TabSizeChanged, true);
+            app.Step2Tab.Title = 'Step2';
+
+            % Create PlateletsPanel
+            app.PlateletsPanel = uipanel(app.Step2Tab);
+            app.PlateletsPanel.Title = 'Platelets';
+            app.PlateletsPanel.BackgroundColor = [0.502 0.502 0.502];
+            app.PlateletsPanel.Position = [1 249 240 218];
+
+            % Create SegmentPButton
+            app.SegmentPButton = uibutton(app.PlateletsPanel, 'push');
+            app.SegmentPButton.ButtonPushedFcn = createCallbackFcn(app, @SegmentPButtonPushed, true);
+            app.SegmentPButton.BackgroundColor = [0.302 0.749 0.9294];
+            app.SegmentPButton.Position = [4 157 113 22];
+            app.SegmentPButton.Text = 'Segment Platelets';
+
+            % Create CountPButton
+            app.CountPButton = uibutton(app.PlateletsPanel, 'push');
+            app.CountPButton.ButtonPushedFcn = createCallbackFcn(app, @CountPButtonPushed, true);
+            app.CountPButton.BackgroundColor = [0.302 0.749 0.9294];
+            app.CountPButton.Position = [10 21 100 22];
+            app.CountPButton.Text = 'Count Plaelets';
+
+            % Create Label
+            app.Label = uilabel(app.PlateletsPanel);
+            app.Label.HorizontalAlignment = 'right';
+            app.Label.Position = [153 21 25 22];
+            app.Label.Text = '';
+
+            % Create PCount
+            app.PCount = uieditfield(app.PlateletsPanel, 'numeric');
+            app.PCount.Position = [153 21 74 22];
+
+            % Create RBCPanel
+            app.RBCPanel = uipanel(app.Step2Tab);
+            app.RBCPanel.Title = 'RBC';
+            app.RBCPanel.BackgroundColor = [0.502 0.502 0.502];
+            app.RBCPanel.Position = [2 16 239 221];
+
+            % Create SegmentRBCButton
+            app.SegmentRBCButton = uibutton(app.RBCPanel, 'push');
+            app.SegmentRBCButton.BackgroundColor = [0.302 0.749 0.9294];
+            app.SegmentRBCButton.Position = [10 160 100 22];
+            app.SegmentRBCButton.Text = 'Segment RBC';
+
+            % Create CountRBCButton
+            app.CountRBCButton = uibutton(app.RBCPanel, 'push');
+            app.CountRBCButton.BackgroundColor = [0.302 0.749 0.9294];
+            app.CountRBCButton.Position = [10 24 100 22];
+            app.CountRBCButton.Text = 'Count RBC';
+
+            % Create EditField_2Label
+            app.EditField_2Label = uilabel(app.RBCPanel);
+            app.EditField_2Label.HorizontalAlignment = 'right';
+            app.EditField_2Label.Position = [153 24 25 22];
+            app.EditField_2Label.Text = '';
+
+            % Create RBCcount
+            app.RBCcount = uieditfield(app.RBCPanel, 'numeric');
+            app.RBCcount.Position = [153 24 74 22];
+
+            % Create mask
+            app.mask = uiaxes(app.Step2Tab);
+            app.mask.PlotBoxAspectRatio = [1 0.662962962962963 0.662962962962963];
+            app.mask.Position = [259 249 300 206];
+
+            % Create segmented
+            app.segmented = uiaxes(app.Step2Tab);
+            app.segmented.PlotBoxAspectRatio = [1 0.718518518518519 0.718518518518519];
+            app.segmented.Position = [259 16 300 221];
+
+            % Create AboutTab
+            app.AboutTab = uitab(app.TabGroup);
+            app.AboutTab.Title = 'About';
+            app.AboutTab.BackgroundColor = [0.9412 0.9412 0.9412];
+        end
+    end
+
+    methods (Access = public)
+
+        % Construct app
+        function app = zia
+
+            % Create and configure components
+            createComponents(app)
+
+            % Register the app with App Designer
+            registerApp(app, app.UIFigure)
+
+            if nargout == 0
+                clear app
+            end
+        end
+
+        % Code that executes before app deletion
+        function delete(app)
+
+            % Delete UIFigure when app is deleted
+            delete(app.UIFigure)
+        end
+    end
+end
