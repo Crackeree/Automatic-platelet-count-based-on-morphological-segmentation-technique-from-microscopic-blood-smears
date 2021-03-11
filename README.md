@@ -2,6 +2,9 @@
 # Automatic-platelet-count-based-of-morphological-segmentation-technique-from-microscopic-blood-smears
 This project is done as my system project. This project deals with counting platelets in human blood smear using morphological segmentation technique of image processing. I have built this project in Matlab environment.
 
+![Capture](https://user-images.githubusercontent.com/43215326/110748370-d1533400-8269-11eb-8683-2a16a0107195.PNG)
+
+
 ![80206313_480781309485490_1335313247951126528_n](https://user-images.githubusercontent.com/43215326/110744834-8c78ce80-8264-11eb-96b1-8281e30a7ec0.png)
 ![80220601_2519650171494753_8809376351032180736_n](https://user-images.githubusercontent.com/43215326/110744851-94387300-8264-11eb-9a4b-c873de4f1841.png)
 ![80424844_2210928212544646_4187939562841964544_n (1)](https://user-images.githubusercontent.com/43215326/110744885-a3b7bc00-8264-11eb-8cf8-7c7eee288de8.png)
